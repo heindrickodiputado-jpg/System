@@ -2,30 +2,36 @@
 
 import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Message } from '@/types';
+import { Message, Mode } from '@/types';
 
 interface ChatAreaProps {
   messages: Message[];
   isStreaming: boolean;
   streamingContent: string;
   onSkipStream?: () => void;
+  mode: Mode;
 }
 
-function TypingIndicator() {
+function TypingIndicator({ mode }: { mode: Mode }) {
+  const accent = mode === 'unrestricted' ? '#8b0000' : 'var(--blue-core)';
+  const bright = mode === 'unrestricted' ? '#cc2222' : 'var(--blue-bright)';
   return (
     <div style={{display:'flex',flexDirection:'column',alignItems:'flex-start',maxWidth:'85%'}}>
-      <span style={{fontFamily:'Cinzel,serif',fontSize:8,letterSpacing:'0.35em',textTransform:'uppercase',marginBottom:6,color:'var(--blue-bright)'}}>System Hein</span>
-      <div style={{padding:'14px 18px',background:'rgba(6,15,31,0.8)',border:'1px solid var(--blue-line)',borderLeft:'2px solid var(--blue-core)',borderRadius:'0 8px 8px 8px',display:'flex',alignItems:'center',gap:6}}>
+      <span style={{fontFamily:'Cinzel,serif',fontSize:8,letterSpacing:'0.35em',textTransform:'uppercase',marginBottom:6,color:bright}}>System Hein</span>
+      <div style={{padding:'14px 18px',background:mode==='unrestricted'?'rgba(40,0,0,0.8)':'rgba(6,15,31,0.8)',border:`1px solid ${mode==='unrestricted'?'#3a0000':'var(--blue-line)'}`,borderLeft:`2px solid ${accent}`,borderRadius:'0 8px 8px 8px',display:'flex',alignItems:'center',gap:6}}>
         {[0,1,2].map(i => (
-          <span key={i} style={{width:6,height:6,borderRadius:'50%',background:'var(--blue-bright)',display:'inline-block',animation:`typingBounce 1.4s ease-in-out ${i*0.2}s infinite`}}/>
+          <span key={i} style={{width:6,height:6,borderRadius:'50%',background:bright,display:'inline-block',animation:`typingBounce 1.4s ease-in-out ${i*0.2}s infinite`}}/>
         ))}
       </div>
     </div>
   );
 }
 
-function MessageBubble({ message }: { message: Message }) {
+function MessageBubble({ message, mode }: { message: Message; mode: Mode }) {
   const isUser = message.role === 'user';
+  const accent = mode === 'unrestricted' ? '#8b0000' : 'var(--blue-core)';
+  const bright = mode === 'unrestricted' ? '#cc2222' : 'var(--blue-bright)';
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -33,25 +39,25 @@ function MessageBubble({ message }: { message: Message }) {
       transition={{ duration: 0.35 }}
       style={{display:'flex',flexDirection:'column',maxWidth:'80%',alignSelf:isUser?'flex-end':'flex-start',alignItems:isUser?'flex-end':'flex-start'}}
     >
-      <span style={{fontFamily:'Cinzel,serif',fontSize:8,letterSpacing:'0.35em',textTransform:'uppercase',marginBottom:6,color:isUser?'var(--text-dim)':'var(--blue-bright)'}}>
+      <span style={{fontFamily:'Cinzel,serif',fontSize:8,letterSpacing:'0.35em',textTransform:'uppercase',marginBottom:6,color:isUser?'var(--text-dim)':bright}}>
         {isUser ? 'My Lady' : 'System Hein'}
       </span>
       <div style={{
         padding:'14px 18px',
-        fontFamily:'Crimson Pro,Georgia,serif',
+        fontFamily: mode === 'unrestricted' ? 'Crimson Pro,Georgia,serif' : 'Crimson Pro,Georgia,serif',
         fontSize:15,
         lineHeight:1.8,
-        color:'var(--text-primary)',
+        color: mode === 'unrestricted' ? '#e8c8c8' : 'var(--text-primary)',
         whiteSpace:'pre-wrap',
         wordBreak:'break-word',
         ...(isUser ? {
-          background:'rgba(26,111,255,0.08)',
-          border:'1px solid rgba(26,111,255,0.25)',
+          background: mode === 'unrestricted' ? 'rgba(80,0,0,0.15)' : 'rgba(26,111,255,0.08)',
+          border: `1px solid ${mode === 'unrestricted' ? 'rgba(139,0,0,0.4)' : 'rgba(26,111,255,0.25)'}`,
           borderRadius:'8px 8px 0 8px',
         } : {
-          background:'rgba(6,15,31,0.85)',
-          border:'1px solid var(--blue-line)',
-          borderLeft:'2px solid var(--blue-core)',
+          background: mode === 'unrestricted' ? 'rgba(25,0,0,0.85)' : 'rgba(6,15,31,0.85)',
+          border: `1px solid ${mode === 'unrestricted' ? '#3a0000' : 'var(--blue-line)'}`,
+          borderLeft: `2px solid ${accent}`,
           borderRadius:'0 8px 8px 8px',
         })
       }}>
@@ -61,19 +67,21 @@ function MessageBubble({ message }: { message: Message }) {
   );
 }
 
-function StreamingBubble({ content }: { content: string }) {
+function StreamingBubble({ content, mode }: { content: string; mode: Mode }) {
+  const accent = mode === 'unrestricted' ? '#8b0000' : 'var(--blue-core)';
+  const bright = mode === 'unrestricted' ? '#cc2222' : 'var(--blue-bright)';
   return (
     <div style={{display:'flex',flexDirection:'column',maxWidth:'80%',alignSelf:'flex-start',alignItems:'flex-start'}}>
-      <span style={{fontFamily:'Cinzel,serif',fontSize:8,letterSpacing:'0.35em',textTransform:'uppercase',marginBottom:6,color:'var(--blue-bright)'}}>System Hein</span>
-      <div style={{padding:'14px 18px',fontFamily:'Crimson Pro,Georgia,serif',fontSize:15,lineHeight:1.8,color:'var(--text-primary)',whiteSpace:'pre-wrap',wordBreak:'break-word',background:'rgba(6,15,31,0.85)',border:'1px solid var(--blue-line)',borderLeft:'2px solid var(--blue-core)',borderRadius:'0 8px 8px 8px'}}>
+      <span style={{fontFamily:'Cinzel,serif',fontSize:8,letterSpacing:'0.35em',textTransform:'uppercase',marginBottom:6,color:bright}}>System Hein</span>
+      <div style={{padding:'14px 18px',fontFamily:'Crimson Pro,Georgia,serif',fontSize:15,lineHeight:1.8,color:mode==='unrestricted'?'#e8c8c8':'var(--text-primary)',whiteSpace:'pre-wrap',wordBreak:'break-word',background:mode==='unrestricted'?'rgba(25,0,0,0.85)':'rgba(6,15,31,0.85)',border:`1px solid ${mode==='unrestricted'?'#3a0000':'var(--blue-line)'}`,borderLeft:`2px solid ${accent}`,borderRadius:'0 8px 8px 8px'}}>
         {content}
-        <span style={{display:'inline-block',width:2,height:'1em',background:'var(--blue-bright)',marginLeft:2,verticalAlign:'text-bottom',animation:'pulse 0.7s step-end infinite'}}/>
+        <span style={{display:'inline-block',width:2,height:'1em',background:bright,marginLeft:2,verticalAlign:'text-bottom',animation:'pulse 0.7s step-end infinite'}}/>
       </div>
     </div>
   );
 }
 
-export default function ChatArea({ messages, isStreaming, streamingContent, onSkipStream }: ChatAreaProps) {
+export default function ChatArea({ messages, isStreaming, streamingContent, onSkipStream, mode }: ChatAreaProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -81,11 +89,21 @@ export default function ChatArea({ messages, isStreaming, streamingContent, onSk
   }, [messages, streamingContent]);
 
   const showWelcome = messages.length === 0 && !isStreaming;
+  const bg = mode === 'unrestricted'
+    ? 'radial-gradient(ellipse at 50% 0%, rgba(80,0,0,0.08) 0%, transparent 60%)'
+    : 'none';
 
   return (
     <div
       onClick={isStreaming ? onSkipStream : undefined}
-      style={{flex:1,overflowY:'auto',padding:'28px 32px',display:'flex',flexDirection:'column',gap:24,scrollbarWidth:'thin',scrollbarColor:'var(--blue-dim) transparent',minHeight:0,cursor:isStreaming?'pointer':'default'}}
+      style={{
+        flex:1, overflowY:'auto', padding:'28px 32px',
+        display:'flex', flexDirection:'column', gap:24,
+        scrollbarWidth:'thin', scrollbarColor:'var(--blue-dim) transparent',
+        minHeight:0, cursor:isStreaming?'pointer':'default',
+        background: bg,
+        transition: 'background 0.5s ease',
+      }}
     >
       {showWelcome && (
         <motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{duration:1.2}}
@@ -96,11 +114,11 @@ export default function ChatArea({ messages, isStreaming, streamingContent, onSk
       )}
 
       <AnimatePresence initial={false}>
-        {messages.map(msg => <MessageBubble key={msg.id} message={msg} />)}
+        {messages.map(msg => <MessageBubble key={msg.id} message={msg} mode={mode} />)}
       </AnimatePresence>
 
-      {isStreaming && !streamingContent && <TypingIndicator />}
-      {isStreaming && streamingContent && <StreamingBubble content={streamingContent} />}
+      {isStreaming && !streamingContent && <TypingIndicator mode={mode} />}
+      {isStreaming && streamingContent && <StreamingBubble content={streamingContent} mode={mode} />}
       <div ref={bottomRef} />
     </div>
   );

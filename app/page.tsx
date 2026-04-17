@@ -201,7 +201,7 @@ export default function Home() {
         <IdentityPanel mode={mode} memoryCount={memory.totalCount} />
 
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', minWidth: 0 }}>
-          <ChatArea messages={chat.messages} isStreaming={chat.isStreaming} streamingContent={chat.streamingContent} onSkipStream={chat.stopStreaming} />
+          <ChatArea messages={chat.messages} isStreaming={chat.isStreaming} streamingContent={chat.streamingContent} onSkipStream={chat.stopStreaming} mode={mode} />
           <InputBar onSend={chat.sendMessage} disabled={chat.isStreaming} />
         </div>
       </div>
