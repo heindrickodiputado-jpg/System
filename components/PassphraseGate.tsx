@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
 
 interface PassphraseGateProps {
   onAuthenticated: () => void;
@@ -13,22 +12,18 @@ export default function PassphraseGate({ onAuthenticated }: PassphraseGateProps)
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+  useEffect(() => { inputRef.current?.focus(); }, []);
 
   const handleSubmit = async () => {
     if (!value.trim() || loading) return;
     setLoading(true);
     setError('');
-
     try {
       const res = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ passphrase: value }),
       });
-
       if (res.ok) {
         onAuthenticated();
       } else {
@@ -43,59 +38,42 @@ export default function PassphraseGate({ onAuthenticated }: PassphraseGateProps)
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-deep)] p-5">
+    <div style={{position:'fixed',inset:0,zIndex:50,display:'flex',alignItems:'center',justifyContent:'center',background:'var(--bg-deep)',padding:20}}>
       <div className="grid-overlay" />
       <div className="scanline-overlay" />
+      <div style={{position:'relative',width:'100%',maxWidth:440,zIndex:1}}>
+        <div style={{position:'relative',background:'rgba(6,15,31,0.6)',backdropFilter:'blur(20px)',border:'1px solid rgba(26,111,255,0.2)',boxShadow:'0 8px 32px rgba(0,0,0,0.4)',padding:40}}>
+          <div style={{position:'absolute',top:6,left:6,width:12,height:12,borderTop:'1px solid var(--blue-core)',borderLeft:'1px solid var(--blue-core)'}}/>
+          <div style={{position:'absolute',top:6,right:6,width:12,height:12,borderTop:'1px solid var(--blue-core)',borderRight:'1px solid var(--blue-core)'}}/>
+          <div style={{position:'absolute',bottom:6,left:6,width:12,height:12,borderBottom:'1px solid var(--blue-core)',borderLeft:'1px solid var(--blue-core)'}}/>
+          <div style={{position:'absolute',bottom:6,right:6,width:12,height:12,borderBottom:'1px solid var(--blue-core)',borderRight:'1px solid var(--blue-core)'}}/>
 
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
-        className="relative w-full max-w-md"
-      >
-        <div className="glass-panel p-8 relative">
-          <div className="corner corner-tl" />
-          <div className="corner corner-tr" />
-          <div className="corner corner-bl" />
-          <div className="corner corner-br" />
-
-          <h1 className="font-cinzel text-xl font-semibold text-[var(--white)] tracking-[0.1em] text-center mb-2">
-            System Hein
-          </h1>
-          <p className="font-crimson italic text-sm text-[var(--text-secondary)] text-center mb-8 leading-relaxed">
-            State the passphrase to initialize the construct.
-          </p>
+          <h1 style={{fontFamily:'Cinzel,serif',fontSize:22,fontWeight:600,color:'var(--white)',letterSpacing:'0.1em',textAlign:'center',marginBottom:10}}>System Hein</h1>
+          <p style={{fontFamily:'Crimson Pro,Georgia,serif',fontStyle:'italic',fontSize:14,color:'var(--text-secondary)',textAlign:'center',marginBottom:32,lineHeight:1.6}}>State the passphrase to initialize the construct.</p>
 
           <input
             ref={inputRef}
             type="password"
             value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+            onChange={e => setValue(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSubmit()}
             placeholder="Enter passphrase..."
-            className="w-full bg-[rgba(6,15,31,0.9)] border border-[var(--blue-line)] text-[var(--text-primary)] font-crimson text-base px-4 py-3 outline-none mb-3 focus:border-[var(--blue-bright)] transition-colors placeholder:text-[var(--text-dim)] placeholder:italic"
-            style={{ fontSize: '16px' }}
+            style={{width:'100%',background:'rgba(6,15,31,0.9)',border:'1px solid var(--blue-line)',color:'var(--text-primary)',fontFamily:'Crimson Pro,Georgia,serif',fontSize:16,padding:'12px 16px',outline:'none',marginBottom:12,display:'block',boxSizing:'border-box'}}
           />
 
           {error && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="font-crimson italic text-sm text-red-400 mb-3 leading-relaxed"
-            >
-              {error}
-            </motion.p>
+            <p style={{fontFamily:'Crimson Pro,Georgia,serif',fontStyle:'italic',fontSize:13,color:'#f87171',marginBottom:12,lineHeight:1.5}}>{error}</p>
           )}
 
           <button
             onClick={handleSubmit}
             disabled={loading || !value.trim()}
-            className="w-full bg-[rgba(26,111,255,0.1)] border border-[var(--blue-core)] text-[var(--blue-bright)] font-cinzel text-[11px] tracking-[0.3em] py-4 uppercase cursor-pointer transition-all hover:bg-[rgba(26,111,255,0.2)] disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{width:'100%',background:'rgba(26,111,255,0.1)',border:'1px solid var(--blue-core)',color:'var(--blue-bright)',fontFamily:'Cinzel,serif',fontSize:11,letterSpacing:'0.3em',padding:'14px 0',cursor:loading||!value.trim()?'not-allowed':'pointer',textTransform:'uppercase',opacity:loading||!value.trim()?0.4:1,display:'block',boxSizing:'border-box'}}
           >
             {loading ? 'Initializing...' : 'Initialize System Hein'}
           </button>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }
