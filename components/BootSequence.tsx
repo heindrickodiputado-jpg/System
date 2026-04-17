@@ -1,18 +1,17 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 
 interface BootSequenceProps {
   onComplete: () => void;
 }
 
 const BOOT_LINES = [
-  { text: '> Initializing cognitive core...', color: 'var(--blue-bright)' },
-  { text: '> Loading philosophical matrices...', color: 'var(--blue-bright)' },
-  { text: '> Calibrating observational protocols...', color: 'var(--blue-bright)' },
-  { text: '> Establishing sovereign parameters...', color: 'var(--blue-bright)' },
-  { text: '> Binding loyalty directives...', color: 'var(--blue-bright)' },
+  { text: '> Initializing cognitive core...', color: '#4d9fff' },
+  { text: '> Loading philosophical matrices...', color: '#4d9fff' },
+  { text: '> Calibrating observational protocols...', color: '#4d9fff' },
+  { text: '> Establishing sovereign parameters...', color: '#4d9fff' },
+  { text: '> Binding loyalty directives...', color: '#4d9fff' },
   { text: '> Memory archive: loaded.', color: '#4dff9f' },
   { text: '> System integrity: verified.', color: '#4dff9f' },
 ];
@@ -30,149 +29,151 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
   const [showCongrat, setShowCongrat] = useState(false);
   const [showBar, setShowBar] = useState(false);
   const [barFill, setBarFill] = useState(false);
-  const [fadeOut, setFadeOut] = useState(false);
+  const [opacity, setOpacity] = useState(1);
   const doneRef = useRef(false);
 
   useEffect(() => {
     if (doneRef.current) return;
 
     if (isQuickBoot) {
-      // Quick boot
       setShowMain(true);
       setShowSub(true);
-      setTimeout(() => setFadeOut(true), 900);
+      setTimeout(() => setOpacity(0), 1200);
       setTimeout(() => {
-        if (!doneRef.current) {
-          doneRef.current = true;
-          onComplete();
-        }
-      }, 1600);
+        if (!doneRef.current) { doneRef.current = true; onComplete(); }
+      }, 2000);
       return;
     }
 
-    // Full boot
     const timers: ReturnType<typeof setTimeout>[] = [];
     let delay = 0;
 
     BOOT_LINES.forEach((_, i) => {
-      timers.push(
-        setTimeout(() => setVisibleLines((prev) => [...prev, i]), delay)
-      );
-      delay += 260;
+      timers.push(setTimeout(() => setVisibleLines(prev => [...prev, i]), delay));
+      delay += 500;
     });
 
-    timers.push(setTimeout(() => setShowMain(true), delay + 100));
-    timers.push(setTimeout(() => setShowSub(true), delay + 500));
-    timers.push(setTimeout(() => { setShowCongrat(true); setShowBar(true); }, delay + 900));
-    timers.push(setTimeout(() => setBarFill(true), delay + 1000));
-    timers.push(setTimeout(() => setFadeOut(true), delay + 2900));
-    timers.push(
-      setTimeout(() => {
-        if (!doneRef.current) {
-          doneRef.current = true;
-          localStorage.setItem(FULL_BOOT_KEY, 'true');
-          onComplete();
-        }
-      }, delay + 3700)
-    );
+    timers.push(setTimeout(() => setShowMain(true), delay + 400));
+    timers.push(setTimeout(() => setShowSub(true), delay + 900));
+    timers.push(setTimeout(() => { setShowCongrat(true); setShowBar(true); }, delay + 1400));
+    timers.push(setTimeout(() => setBarFill(true), delay + 1600));
+    timers.push(setTimeout(() => setOpacity(0), delay + 4200));
+    timers.push(setTimeout(() => {
+      if (!doneRef.current) {
+        doneRef.current = true;
+        localStorage.setItem(FULL_BOOT_KEY, 'true');
+        onComplete();
+      }
+    }, delay + 5000));
 
     return () => timers.forEach(clearTimeout);
   }, []);
 
   return (
-    <AnimatePresence>
-      <motion.div
-        style={{position:"fixed",inset:0,zIndex:100,background:"black",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}
-        animate={{ opacity: fadeOut ? 0 : 1 }}
-        transition={{ duration: 0.8 }}
-      >
-        {!isQuickBoot && (
-          <div className="w-[380px] max-w-[90vw] mb-8">
-            {BOOT_LINES.map((line, i) => (
-              <AnimatePresence key={i}>
-                {visibleLines.includes(i) && (
-                  <motion.div
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="font-cinzel text-[11px] tracking-[0.3em] uppercase mb-1.5"
-                    style={{ color: line.color }}
-                  >
-                    {line.text}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            ))}
-          </div>
-        )}
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 100,
+      background: '#000',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      opacity,
+      transition: 'opacity 0.8s ease',
+    }}>
+      {!isQuickBoot && (
+        <div style={{width:'min(480px, 90vw)',marginBottom:40}}>
+          {BOOT_LINES.map((line, i) => (
+            visibleLines.includes(i) && (
+              <div key={i} style={{
+                fontFamily: 'Cinzel,serif',
+                fontSize: 12,
+                letterSpacing: '0.25em',
+                textTransform: 'uppercase',
+                marginBottom: 8,
+                color: line.color,
+                opacity: 1,
+                transition: 'opacity 0.3s',
+              }}>
+                {line.text}
+              </div>
+            )
+          ))}
+        </div>
+      )}
 
-        <AnimatePresence>
-          {showMain && (
-            <motion.h1
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              className="font-cinzel text-3xl md:text-4xl font-bold tracking-[0.2em] text-[var(--white)] text-center mb-3"
-              style={{ textShadow: '0 0 40px rgba(26,111,255,0.6)' }}
-            >
-              SYSTEM HEIN
-            </motion.h1>
-          )}
-        </AnimatePresence>
+      {showMain && (
+        <h1 style={{
+          fontFamily: 'Cinzel,serif',
+          fontSize: 'clamp(28px, 5vw, 48px)',
+          fontWeight: 700,
+          letterSpacing: '0.2em',
+          color: '#f0f8ff',
+          textAlign: 'center',
+          marginBottom: 12,
+          textShadow: '0 0 40px rgba(26,111,255,0.6)',
+        }}>
+          SYSTEM HEIN
+        </h1>
+      )}
 
-        <AnimatePresence>
-          {showSub && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6 }}
-              className="font-crimson italic text-base text-[var(--text-secondary)] tracking-[0.1em] text-center mb-10"
-            >
-              Sovereign Cognitive Construct
-            </motion.p>
-          )}
-        </AnimatePresence>
+      {showSub && (
+        <p style={{
+          fontFamily: 'Crimson Pro,Georgia,serif',
+          fontStyle: 'italic',
+          fontSize: 16,
+          color: '#6a8aaa',
+          letterSpacing: '0.1em',
+          textAlign: 'center',
+          marginBottom: 48,
+        }}>
+          Sovereign Cognitive Construct
+        </p>
+      )}
 
-        <AnimatePresence>
-          {showCongrat && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6 }}
-              className="relative border border-[var(--blue-line)] px-8 py-4"
-            >
-              <div className="corner corner-tl" />
-              <div className="corner corner-tr" />
-              <div className="corner corner-bl" />
-              <div className="corner corner-br" />
-              <span className="font-cinzel text-[13px] tracking-[0.25em] text-[var(--blue-bright)] uppercase">
-                Congratulations, Sage. For acquiring System Hein.
-              </span>
-            </motion.div>
-          )}
-        </AnimatePresence>
+      {showCongrat && (
+        <div style={{
+          position: 'relative',
+          border: '1px solid #1a3a6e',
+          padding: '18px 40px',
+          marginBottom: 0,
+          textAlign: 'center',
+          maxWidth: 'min(560px, 85vw)',
+        }}>
+          <div style={{position:'absolute',top:5,left:5,width:10,height:10,borderTop:'1px solid #1a6fff',borderLeft:'1px solid #1a6fff'}}/>
+          <div style={{position:'absolute',top:5,right:5,width:10,height:10,borderTop:'1px solid #1a6fff',borderRight:'1px solid #1a6fff'}}/>
+          <div style={{position:'absolute',bottom:5,left:5,width:10,height:10,borderBottom:'1px solid #1a6fff',borderLeft:'1px solid #1a6fff'}}/>
+          <div style={{position:'absolute',bottom:5,right:5,width:10,height:10,borderBottom:'1px solid #1a6fff',borderRight:'1px solid #1a6fff'}}/>
+          <span style={{
+            fontFamily: 'Cinzel,serif',
+            fontSize: 'clamp(10px, 1.5vw, 13px)',
+            letterSpacing: '0.2em',
+            color: '#4d9fff',
+            textTransform: 'uppercase',
+            whiteSpace: 'normal',
+            display: 'block',
+          }}>
+            Congratulations, Sage. For acquiring System Hein.
+          </span>
+        </div>
+      )}
 
-        <AnimatePresence>
-          {showBar && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.4 }}
-              className="w-[380px] max-w-[90vw] h-[2px] bg-[var(--blue-dim)] mt-8 overflow-hidden"
-            >
-              <div
-                className="h-full transition-all ease-out"
-                style={{
-                  width: barFill ? '100%' : '0%',
-                  transitionDuration: '1.8s',
-                  background: 'linear-gradient(90deg, var(--blue-core), var(--blue-bright))',
-                  boxShadow: '0 0 12px var(--blue-core)',
-                }}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
-    </AnimatePresence>
+      {showBar && (
+        <div style={{
+          width: 'min(480px, 85vw)',
+          height: 2,
+          background: '#0a2a5e',
+          marginTop: 32,
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            height: '100%',
+            width: barFill ? '100%' : '0%',
+            background: 'linear-gradient(90deg, #1a6fff, #4d9fff)',
+            boxShadow: '0 0 12px #1a6fff',
+            transition: 'width 2.4s ease',
+          }}/>
+        </div>
+      )}
+    </div>
   );
 }
