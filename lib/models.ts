@@ -10,7 +10,7 @@ export interface ModelConfig {
 export function getSovereignConfig(): ModelConfig {
   return {
     url: 'https://openrouter.ai/api/v1/chat/completions',
-    model: 'nousresearch/hermes-3-llama-3.1-405b:free',
+    model: 'meta-llama/llama-3.3-70b-instruct:free',
     key: process.env.OPENROUTER_API_KEY!,
     temperature: 0.75,
     max_tokens: 4096,
