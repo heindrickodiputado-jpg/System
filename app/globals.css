@@ -207,3 +207,16 @@ body {
 .unrestricted .corner {
   border-color: #8b0000;
 }
+
+.unrestricted input,
+.unrestricted textarea {
+  border-color: #3a0000 !important;
+  color: #e8c8c8 !important;
+}
+
+.unrestricted input:focus,
+.unrestricted textarea:focus {
+  border-color: #8b0000 !important;
+  outline: none !important;
+  box-shadow: 0 0 12px rgba(139,0,0,0.2) !important;
+}
