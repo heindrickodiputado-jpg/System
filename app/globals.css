@@ -148,3 +148,62 @@ body {
   .msg-bubble-user, .msg-bubble-system { font-size: 14px; padding: 10px 14px; }
   input, textarea { font-size: 16px !important; }
 }
+
+/* ── Unrestricted Gothic Theme ── */
+.unrestricted {
+  --blue-core:      #8b0000;
+  --blue-bright:    #cc2222;
+  --blue-dim:       #3a0000;
+  --blue-line:      #4a0000;
+  --text-primary:   #e8c8c8;
+  --text-secondary: #8a4a4a;
+  --text-dim:       #4a1a1a;
+  --bg-deep:        #030000;
+  --bg-mid:         #080000;
+  --bg-panel:       #0f0000;
+  --white:          #f5e0e0;
+  --green-online:   #cc2222;
+  --gold:           #8b2222;
+}
+
+.unrestricted body,
+.unrestricted .grid-overlay {
+  background-image:
+    linear-gradient(rgba(139,0,0,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139,0,0,0.04) 1px, transparent 1px);
+}
+
+.unrestricted .scanline-overlay {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(80,0,0,0.12) 2px,
+    rgba(80,0,0,0.12) 4px
+  );
+}
+
+.unrestricted .icon-btn {
+  border-color: #3a0000;
+  color: #cc2222;
+}
+
+.unrestricted .icon-btn:hover {
+  border-color: #cc2222;
+  background: rgba(139,0,0,0.15);
+}
+
+.unrestricted .msg-bubble-user {
+  background: rgba(80,0,0,0.12);
+  border-color: rgba(139,0,0,0.3);
+}
+
+.unrestricted .msg-bubble-system {
+  background: rgba(20,0,0,0.9);
+  border-color: #3a0000;
+  border-left-color: #8b0000;
+}
+
+.unrestricted .corner {
+  border-color: #8b0000;
+}

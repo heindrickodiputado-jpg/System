@@ -131,7 +131,7 @@ export default function Home() {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--bg-deep)', overflow: 'hidden' }}>
+    <div className={mode === 'unrestricted' ? 'unrestricted' : ''} style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--bg-deep)', overflow: 'hidden', transition: 'background 0.5s ease' }}>
       <ParticleBackground />
       <div className="grid-overlay" />
       <div className="scanline-overlay" />

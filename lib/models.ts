@@ -13,19 +13,19 @@ export function getSovereignConfig(): ModelConfig {
     model: 'llama-3.3-70b-versatile',
     key: process.env.GROQ_API_KEY!,
     temperature: 0.75,
-    max_tokens: 1536,
+    max_tokens: 4096,
   };
 }
 
 export function getUnrestrictedConfig(): ModelConfig {
   return {
     url: 'https://openrouter.ai/api/v1/chat/completions',
-    model: 'nousresearch/hermes-3-llama-3.1-70b',
+    model: 'nothingiisreal/mn-celeste-12b',
     key: process.env.OPENROUTER_API_KEY!,
-    temperature: 0.85,
-    max_tokens: 1536,
+    temperature: 0.75,
+    max_tokens: 4096,
     headers: {
-      'HTTP-Referer': process.env.SITE_URL || 'https://system-hein.vercel.app',
+      'HTTP-Referer': process.env.SITE_URL || 'https://system-theta-ten.vercel.app',
       'X-Title': 'System Hein',
     },
   };
