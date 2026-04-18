@@ -20,7 +20,7 @@ export function getSovereignConfig(): ModelConfig {
 export function getUnrestrictedConfig(): ModelConfig {
   return {
     url: 'https://openrouter.ai/api/v1/chat/completions',
-    model: 'cognitivecomputations/dolphin-mistral-24b-venice:free',
+    model: 'cognitivecomputations/dolphin-mistral-24b-venice-edition:free',
     key: process.env.OPENROUTER_API_KEY!,
     temperature: 0.75,
     max_tokens: 4096,
