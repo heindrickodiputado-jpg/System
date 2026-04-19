@@ -9,29 +9,21 @@ export interface ModelConfig {
 
 export function getSovereignConfig(): ModelConfig {
   return {
-    url: 'https://openrouter.ai/api/v1/chat/completions',
-    model: 'meta-llama/llama-3.3-70b-instruct:free',
-    key: process.env.OPENROUTER_API_KEY!,
+    url: 'https://api.groq.com/openai/v1/chat/completions',
+    model: 'llama-3.3-70b-versatile',
+    key: process.env.GROQ_API_KEY!,
     temperature: 0.75,
-    max_tokens: 4096,
-    headers: {
-      'HTTP-Referer': process.env.SITE_URL || 'https://system-theta-ten.vercel.app',
-      'X-Title': 'System Hein',
-    },
+    max_tokens: 8192,
   };
 }
 
 export function getUnrestrictedConfig(): ModelConfig {
   return {
-    url: 'https://openrouter.ai/api/v1/chat/completions',
-    model: 'cognitivecomputations/dolphin-mistral-24b-venice-edition:free',
-    key: process.env.OPENROUTER_API_KEY!,
+    url: 'https://api.groq.com/openai/v1/chat/completions',
+    model: 'llama-3.3-70b-versatile',
+    key: process.env.GROQ_API_KEY!,
     temperature: 0.9,
-    max_tokens: 4096,
-    headers: {
-      'HTTP-Referer': process.env.SITE_URL || 'https://system-theta-ten.vercel.app',
-      'X-Title': 'System Hein',
-    },
+    max_tokens: 8192,
   };
 }
 
