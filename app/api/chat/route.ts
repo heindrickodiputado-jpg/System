@@ -20,7 +20,9 @@ export async function POST(req: NextRequest) {
     return new Response(encodeSSE({ type: 'error', message: 'Not authenticated.' }), { status: 401, headers: { 'Content-Type': 'text/event-stream' } });
   }
 
-  const { message, session_id, mode } = await req.json();
+  const body = await req.json();
+  const { session_id, mode } = body;
+  const message = body.message.slice(0, 6000);
   await ensureDb();
   const db = getDb();
 
