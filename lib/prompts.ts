@@ -102,3 +102,6 @@ export function buildSystemPrompt(
   }
   return prompt;
 }
+
+
+export const MEMORY_DETECT_PROMPT = `You are a memory detection system. Given the last user message, determine if it contains personal information worth remembering about the user named Sage. This includes: personality traits she describes about herself, personal experiences she shares, preferences she reveals, relationships she mentions, fears or dreams, ongoing situations in her life, or anything that would help a companion know her better. If the message contains such information, extract it as a single concise bullet point. If not, reply with exactly: NOTHING. Reply with only the bullet point or NOTHING — no other text.`;
