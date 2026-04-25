@@ -46,34 +46,25 @@ function RateLimitBanner({ seconds }: { seconds: number }) {
 
 function MessageBubble({ message, mode, onDelete }: { message: Message; mode: Mode; onDelete?: (id: string) => void }) {
   const isUser = message.role === 'user';
-  const [showDelete, setShowDelete] = useState(false);
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const accent = mode === 'unrestricted' ? '#8b0000' : 'var(--blue-core)';
   const bright = mode === 'unrestricted' ? '#cc2222' : 'var(--blue-bright)';
 
-  const handleTouchStart = () => {
-    if (!isUser || !onDelete) return;
-    longPressTimer.current = setTimeout(() => setShowDelete(true), 500);
-  };
-
-  const handleTouchEnd = () => {
-    if (longPressTimer.current) clearTimeout(longPressTimer.current);
-  };
-
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35 }}
-      onMouseEnter={() => isUser && setShowDelete(true)}
-      onMouseLeave={() => setShowDelete(false)}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      style={{display:'flex',flexDirection:'column',maxWidth:'80%',alignSelf:isUser?'flex-end':'flex-start',alignItems:isUser?'flex-end':'flex-start',position:'relative'}}
-    >
-      <span style={{fontFamily:'Cinzel,serif',fontSize:8,letterSpacing:'0.35em',textTransform:'uppercase',marginBottom:6,color:isUser?'var(--text-dim)':bright}}>
-        {isUser ? 'My Lady' : 'System Hein'}
-      </span>
+    <div style={{display:'flex',flexDirection:'column',maxWidth:'80%',alignSelf:isUser?'flex-end':'flex-start',alignItems:isUser?'flex-end':'flex-start',position:'relative'}}>
+      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6,flexDirection:isUser?'row-reverse':'row'}}>
+        <span style={{fontFamily:'Cinzel,serif',fontSize:8,letterSpacing:'0.35em',textTransform:'uppercase',color:isUser?'var(--text-dim)':bright}}>
+          {isUser ? 'My Lady' : 'System Hein'}
+        </span>
+        {isUser && onDelete && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(message.id); }}
+            style={{background:'none',border:'none',color:'var(--text-dim)',cursor:'pointer',fontSize:10,padding:'0 4px',lineHeight:1,opacity:0.5,transition:'opacity 0.2s, color 0.2s'}}
+            onMouseEnter={e => { e.currentTarget.style.opacity='1'; e.currentTarget.style.color='#cc2222'; }}
+            onMouseLeave={e => { e.currentTarget.style.opacity='0.5'; e.currentTarget.style.color='var(--text-dim)'; }}
+            title="Delete message"
+          >✕</button>
+        )}
+      </div>
       <div style={{
         padding:'14px 18px',
         fontFamily:'Crimson Pro,Georgia,serif',
@@ -82,7 +73,6 @@ function MessageBubble({ message, mode, onDelete }: { message: Message; mode: Mo
         color:mode==='unrestricted'?'#e8c8c8':'var(--text-primary)',
         whiteSpace:'pre-wrap',
         wordBreak:'break-word',
-        position:'relative',
         ...(isUser ? {
           background:mode==='unrestricted'?'rgba(80,0,0,0.15)':'rgba(26,111,255,0.08)',
           border:`1px solid ${mode==='unrestricted'?'rgba(139,0,0,0.4)':'rgba(26,111,255,0.25)'}`,
@@ -96,35 +86,7 @@ function MessageBubble({ message, mode, onDelete }: { message: Message; mode: Mo
       }}>
         {message.content}
       </div>
-
-      {isUser {isUser && onDelete && showDelete && ({isUser && onDelete && showDelete && ( onDelete {isUser && onDelete && showDelete && ({isUser && onDelete && showDelete && ( (
-        <motion.button
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.8 }}
-          onClick={(e) => { e.stopPropagation(); onDelete(message.id); setShowDelete(false); }}
-          style={{
-            position:'absolute',
-            top:-10,
-            right:-10,
-            width:22,
-            height:22,
-            borderRadius:'50%',
-            background:'rgba(10,0,0,0.95)',
-            border:'1px solid #8b0000',
-            color:'#cc2222',
-            fontSize:10,
-            cursor:'pointer',
-            display:'flex',
-            alignItems:'center',
-            justifyContent:'center',
-            zIndex:10,
-            boxShadow:'0 0 8px rgba(139,0,0,0.4)',
-          }}
-          title="Delete message"
-        >✕</motion.button>
-      )}
-    </motion.div>
+    </div>
   );
 }
 
@@ -154,8 +116,7 @@ export default function ChatArea({ messages, isStreaming, streamingContent, onSk
 
   return (
     <div
-      onClick={isStreaming ? onSkipStream : undefined}
-      style={{flex:1,overflowY:'auto',padding:'28px 32px',display:'flex',flexDirection:'column',gap:24,scrollbarWidth:'thin',scrollbarColor:'var(--blue-dim) transparent',minHeight:0,cursor:'default',background:bg,transition:'background 0.5s ease'}}
+      style={{flex:1,overflowY:'auto',padding:'28px 32px',display:'flex',flexDirection:'column',gap:24,scrollbarWidth:'thin',scrollbarColor:'var(--blue-dim) transparent',minHeight:0,background:bg,transition:'background 0.5s ease'}}
     >
       {showWelcome && (
         <motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{duration:1.2}}
@@ -173,7 +134,12 @@ export default function ChatArea({ messages, isStreaming, streamingContent, onSk
 
       {rateLimitSeconds && rateLimitSeconds > 0 && <RateLimitBanner seconds={rateLimitSeconds} />}
       {isStreaming && !streamingContent && <TypingIndicator mode={mode} />}
-      {isStreaming && streamingContent && <StreamingBubble content={streamingContent} mode={mode} />}
+      {isStreaming && streamingContent && (
+        <div onClick={onSkipStream} style={{cursor:'pointer'}}>
+          <StreamingBubble content={streamingContent} mode={mode} />
+          <p style={{fontFamily:'Cinzel,serif',fontSize:8,color:'var(--text-dim)',letterSpacing:'0.2em',textTransform:'uppercase',marginTop:4,textAlign:'center'}}>Tap to skip</p>
+        </div>
+      )}
       <div ref={bottomRef} />
     </div>
   );
