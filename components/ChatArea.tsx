@@ -97,7 +97,7 @@ function MessageBubble({ message, mode, onDelete }: { message: Message; mode: Mo
         {message.content}
       </div>
 
-      {isUser && onDelete && showDelete && (
+      {isUser {isUser && onDelete && showDelete && ({isUser && onDelete && showDelete && ( onDelete {isUser && onDelete && showDelete && ({isUser && onDelete && showDelete && ( (
         <motion.button
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -155,7 +155,7 @@ export default function ChatArea({ messages, isStreaming, streamingContent, onSk
   return (
     <div
       onClick={isStreaming ? onSkipStream : undefined}
-      style={{flex:1,overflowY:'auto',padding:'28px 32px',display:'flex',flexDirection:'column',gap:24,scrollbarWidth:'thin',scrollbarColor:'var(--blue-dim) transparent',minHeight:0,cursor:isStreaming?'pointer':'default',background:bg,transition:'background 0.5s ease'}}
+      style={{flex:1,overflowY:'auto',padding:'28px 32px',display:'flex',flexDirection:'column',gap:24,scrollbarWidth:'thin',scrollbarColor:'var(--blue-dim) transparent',minHeight:0,cursor:'default',background:bg,transition:'background 0.5s ease'}}
     >
       {showWelcome && (
         <motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{duration:1.2}}

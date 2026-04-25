@@ -220,3 +220,17 @@ body {
   outline: none !important;
   box-shadow: 0 0 12px rgba(139,0,0,0.2) !important;
 }
+
+/* Delete button always visible on user messages */
+.msg-delete-btn {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.msg-user-wrap:hover .msg-delete-btn {
+  opacity: 1;
+}
+@media (hover: none) {
+  .msg-delete-btn {
+    opacity: 0.5;
+  }
+}
