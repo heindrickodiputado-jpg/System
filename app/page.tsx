@@ -26,6 +26,7 @@ export default function Home() {
   const [showModeWarning, setShowModeWarning] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
+  const [rateLimitSeconds, setRateLimitSeconds] = useState(0);
   const [isDesktop, setIsDesktop] = useState(false);
 
   const session = useSession();
@@ -52,6 +53,10 @@ export default function Home() {
       showToast('Memory pinned, My Lady.');
     },
     onSessionUpdate: () => session.fetchSessions(),
+    onRateLimit: (seconds) => {
+      setRateLimitSeconds(seconds);
+      setTimeout(() => setRateLimitSeconds(0), seconds * 1000);
+    },
     onSummarizeNeeded: (sid) => {
       fetch('/api/memory/summarize', {
         method: 'POST',
@@ -201,7 +206,7 @@ export default function Home() {
         <IdentityPanel mode={mode} memoryCount={memory.totalCount} />
 
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', minWidth: 0 }}>
-          <ChatArea messages={chat.messages} isStreaming={chat.isStreaming} streamingContent={chat.streamingContent} onSkipStream={chat.stopStreaming} mode={mode} />
+          <ChatArea messages={chat.messages} isStreaming={chat.isStreaming} streamingContent={chat.streamingContent} onSkipStream={chat.stopStreaming} mode={mode} onDeleteMessage={chat.deleteMessage} rateLimitSeconds={rateLimitSeconds} />
           <InputBar onSend={chat.sendMessage} disabled={chat.isStreaming} />
         </div>
       </div>

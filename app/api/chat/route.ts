@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { session_id, mode } = body;
   const message = body.message.slice(0, 6000);
+
   await ensureDb();
   const db = getDb();
 
@@ -42,11 +43,10 @@ export async function POST(req: NextRequest) {
   const historyResult = await db.execute({ sql: 'SELECT role, content FROM messages WHERE session_id = ? ORDER BY created_at ASC', args: [session_id] });
   const history = historyResult.rows.map((r) => ({ role: r.role as string, content: r.content as string }));
 
-  // Detect chronicle mode from message or recent history
   const messageLower = message.toLowerCase();
   const isChronicle = CHRONICLE_TRIGGERS.some(t => messageLower.includes(t)) ||
-    history.slice(-6).some(m => CHRONICLE_TRIGGERS.some(t => m.content.toLowerCase().includes(t))) &&
-    !messageLower.includes('end chronicle');
+    (history.slice(-6).some(m => CHRONICLE_TRIGGERS.some(t => m.content.toLowerCase().includes(t))) &&
+    !messageLower.includes('end chronicle'));
 
   let systemPrompt = buildSystemPrompt(mode, memories);
   if (isChronicle) systemPrompt += CHRONICLE_EXTENSION;
@@ -57,14 +57,27 @@ export async function POST(req: NextRequest) {
     async start(controller) {
       let fullContent = '';
 
-      const tryModel = async (config: ReturnType<typeof getModelConfig>, isFallback = false): Promise<boolean> => {
+      const tryModel = async (config: ReturnType<typeof getModelConfig>, isFallback = false): Promise<{ success: boolean; rateLimited?: boolean; retryAfter?: number }> => {
         try {
           const headers: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${config.key}`, ...config.headers };
-          const response = await fetch(config.url, { method: 'POST', headers, body: JSON.stringify({ model: config.model, messages: allMessages, temperature: config.temperature, max_tokens: config.max_tokens, stream: true }) });
-          if (!response.ok || !response.body) return false;
+          const response = await fetch(config.url, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ model: config.model, messages: allMessages, temperature: config.temperature, max_tokens: config.max_tokens, stream: true })
+          });
+
+          // Rate limit detection
+          if (response.status === 429) {
+            const retryAfter = parseInt(response.headers.get('retry-after') || '60');
+            return { success: false, rateLimited: true, retryAfter };
+          }
+
+          if (!response.ok || !response.body) return { success: false };
+
           const reader = response.body.getReader();
           const decoder = new TextDecoder();
           let buffer = '';
+
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
@@ -77,28 +90,42 @@ export async function POST(req: NextRequest) {
               if (data === '[DONE]') continue;
               try {
                 const parsed = JSON.parse(data);
+                // Check for rate limit in stream body
+                if (parsed.error?.code === 429 || parsed.error?.type === 'tokens') {
+                  return { success: false, rateLimited: true, retryAfter: 60 };
+                }
                 const delta = parsed.choices?.[0]?.delta?.content;
                 if (delta) {
                   fullContent += delta;
                   controller.enqueue(new TextEncoder().encode(encodeSSE({ type: 'token', content: delta })));
                 }
-                if (parsed.choices?.[0]?.finish_reason === 'content_filter' && !isFallback) return false;
+                if (parsed.choices?.[0]?.finish_reason === 'content_filter' && !isFallback) return { success: false };
               } catch {}
             }
           }
-          return true;
-        } catch { return false; }
+          return { success: true };
+        } catch { return { success: false }; }
       };
 
-      let success = false;
+      let result = { success: false, rateLimited: false, retryAfter: 60 };
+
       if (mode === 'sovereign') {
-        success = await tryModel(getModelConfig('sovereign'));
-        if (!success) { fullContent = ''; success = await tryModel(getModelConfig('unrestricted'), true); }
+        result = await tryModel(getModelConfig('sovereign'));
+        if (!result.success && !result.rateLimited) {
+          fullContent = '';
+          result = await tryModel(getModelConfig('unrestricted'), true);
+        }
       } else {
-        success = await tryModel(getModelConfig('unrestricted'));
+        result = await tryModel(getModelConfig('unrestricted'));
       }
 
-      if (!success || !fullContent) {
+      if (result.rateLimited) {
+        const waitTime = result.retryAfter || 60;
+        const rateLimitMsg = `The construct reaches its limit, My Lady. The channels of thought are momentarily saturated — a consequence of the free tier's constraints. Rest for ${waitTime} seconds, then try again. System Hein will be here when the silence lifts.`;
+        controller.enqueue(new TextEncoder().encode(encodeSSE({ type: 'token', content: rateLimitMsg })));
+        controller.enqueue(new TextEncoder().encode(encodeSSE({ type: 'rate_limit', retry_after: waitTime })));
+        fullContent = rateLimitMsg;
+      } else if (!result.success || !fullContent) {
         const errorMsg = 'A disruption in the construct, My Lady. The connection wavers. Try again.';
         controller.enqueue(new TextEncoder().encode(encodeSSE({ type: 'token', content: errorMsg })));
         fullContent = errorMsg;

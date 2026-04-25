@@ -10,10 +10,7 @@ function detectPinTrigger(text: string): string | null {
   const lower = text.toLowerCase();
   for (const trigger of PIN_TRIGGERS) {
     if (lower.includes(trigger)) {
-      const cleaned = text
-        .replace(new RegExp(trigger, 'gi'), '')
-        .replace(/[,.:;!?]+$/, '')
-        .trim();
+      const cleaned = text.replace(new RegExp(trigger, 'gi'), '').replace(/[,.:;!?]+$/, '').trim();
       if (cleaned.length > 3) return cleaned;
     }
   }
@@ -30,15 +27,10 @@ interface UseChatOptions {
   onPinDetected?: (text: string) => void;
   onSessionUpdate?: () => void;
   onSummarizeNeeded?: (sessionId: string) => void;
+  onRateLimit?: (seconds: number) => void;
 }
 
-export function useChat({
-  sessionId,
-  mode,
-  onPinDetected,
-  onSessionUpdate,
-  onSummarizeNeeded,
-}: UseChatOptions) {
+export function useChat({ sessionId, mode, onPinDetected, onSessionUpdate, onSummarizeNeeded, onRateLimit }: UseChatOptions) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
@@ -46,13 +38,7 @@ export function useChat({
   const userMessageCountRef = useRef(0);
 
   const addIntroMessage = useCallback(() => {
-    const intro: Message = {
-      id: generateId(),
-      role: 'assistant',
-      content: INTRO_MESSAGE,
-      timestamp: new Date().toISOString(),
-    };
-    setMessages([intro]);
+    setMessages([{ id: generateId(), role: 'assistant', content: INTRO_MESSAGE, timestamp: new Date().toISOString() }]);
   }, []);
 
   const loadMessages = useCallback(async (sid: string) => {
@@ -61,13 +47,9 @@ export function useChat({
       const data = await res.json();
       if (data.messages) {
         setMessages(data.messages);
-        userMessageCountRef.current = data.messages.filter(
-          (m: Message) => m.role === 'user'
-        ).length;
+        userMessageCountRef.current = data.messages.filter((m: Message) => m.role === 'user').length;
       }
-    } catch {
-      // Silent fail
-    }
+    } catch {}
   }, []);
 
   const clearMessages = useCallback(() => {
@@ -77,145 +59,110 @@ export function useChat({
   }, []);
 
   const stopStreaming = useCallback(() => {
-    if (abortRef.current) {
-      abortRef.current.abort();
-    }
-
+    if (abortRef.current) abortRef.current.abort();
     if (streamingContent) {
-      const msg: Message = {
-        id: generateId(),
-        role: 'assistant',
-        content: streamingContent,
-        timestamp: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, msg]);
+      setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: streamingContent, timestamp: new Date().toISOString() }]);
       setStreamingContent('');
     }
-
     setIsStreaming(false);
   }, [streamingContent]);
 
-  const triggerSummarize = useCallback(
-    (sid: string) => {
-      fetch('/api/memory/summarize', {
+  const deleteMessage = useCallback(async (messageId: string) => {
+    // Remove from local state immediately
+    setMessages(prev => prev.filter(m => m.id !== messageId));
+    // Delete from DB
+    try {
+      await fetch(`/api/messages/${messageId}`, { method: 'DELETE' });
+    } catch {}
+  }, []);
+
+  const detectAndSaveMemory = useCallback(async (text: string) => {
+    try {
+      await fetch('/api/memory/detect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: sid }),
-      }).catch(() => {});
-      onSummarizeNeeded?.(sid);
-    },
-    [onSummarizeNeeded]
-  );
+        body: JSON.stringify({ message: text }),
+      });
+    } catch {}
+  }, []);
 
-  const sendMessage = useCallback(
-    async (text: string) => {
-      if (!sessionId || isStreaming) return;
+  const triggerSummarize = useCallback((sid: string) => {
+    fetch('/api/memory/summarize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sid }),
+    }).catch(() => {});
+    onSummarizeNeeded?.(sid);
+  }, [onSummarizeNeeded]);
 
-      // Optimistic user message
-      const userMsg: Message = {
-        id: generateId(),
-        role: 'user',
-        content: text,
-        timestamp: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, userMsg]);
-      userMessageCountRef.current += 1;
+  const sendMessage = useCallback(async (text: string) => {
+    if (!sessionId || isStreaming) return;
 
-      // Pin detection
-      const pinText = detectPinTrigger(text);
-      if (pinText && onPinDetected) {
-        onPinDetected(pinText);
-      }
+    const userMsg: Message = { id: generateId(), role: 'user', content: text, timestamp: new Date().toISOString() };
+    setMessages(prev => [...prev, userMsg]);
+    userMessageCountRef.current += 1;
 
-      setIsStreaming(true);
-      setStreamingContent('');
+    const pinText = detectPinTrigger(text);
+    if (pinText && onPinDetected) onPinDetected(pinText);
 
-      const controller = new AbortController();
-      abortRef.current = controller;
+    detectAndSaveMemory(text);
 
-      let fullContent = '';
+    setIsStreaming(true);
+    setStreamingContent('');
 
-      try {
-        const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text, session_id: sessionId, mode }),
-          signal: controller.signal,
-        });
+    const controller = new AbortController();
+    abortRef.current = controller;
+    let fullContent = '';
 
-        if (!res.body) throw new Error('No stream body');
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, session_id: sessionId, mode }),
+        signal: controller.signal,
+      });
 
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
+      if (!res.body) throw new Error('No stream');
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
 
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
-
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
-            const raw = line.slice(6).trim();
-            try {
-              const evt = JSON.parse(raw);
-              if (evt.type === 'token' && evt.content) {
-                fullContent += evt.content;
-                setStreamingContent(fullContent);
-              } else if (evt.type === 'done') {
-                const assistantMsg: Message = {
-                  id: generateId(),
-                  role: 'assistant',
-                  content: evt.full_content || fullContent,
-                  timestamp: new Date().toISOString(),
-                };
-                setMessages((prev) => [...prev, assistantMsg]);
-                setStreamingContent('');
-              }
-            } catch {
-              // Skip
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const evt = JSON.parse(line.slice(6).trim());
+            if (evt.type === 'token' && evt.content) {
+              fullContent += evt.content;
+              setStreamingContent(fullContent);
+            } else if (evt.type === 'done') {
+              setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: evt.full_content || fullContent, timestamp: new Date().toISOString() }]);
+              setStreamingContent('');
+            } else if (evt.type === 'rate_limit') {
+              onRateLimit?.(evt.retry_after || 60);
             }
-          }
+          } catch {}
         }
-      } catch (err: unknown) {
-        if (err instanceof Error && err.name !== 'AbortError') {
-          const errorMsg: Message = {
-            id: generateId(),
-            role: 'assistant',
-            content:
-              'A disruption in the construct, My Lady. The connection wavers. Try again.',
-            timestamp: new Date().toISOString(),
-          };
-          setMessages((prev) => [...prev, errorMsg]);
-          setStreamingContent('');
-        }
-      } finally {
-        setIsStreaming(false);
-        abortRef.current = null;
       }
-
-      // Auto-summarize every 8 user messages
-      if (userMessageCountRef.current % 8 === 0) {
-        triggerSummarize(sessionId);
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name !== 'AbortError') {
+        setMessages(prev => [...prev, { id: generateId(), role: 'assistant', content: 'A disruption in the construct, My Lady. The connection wavers. Try again.', timestamp: new Date().toISOString() }]);
+        setStreamingContent('');
       }
+    } finally {
+      setIsStreaming(false);
+      abortRef.current = null;
+    }
 
-      onSessionUpdate?.();
-    },
-    [sessionId, mode, isStreaming, onPinDetected, onSessionUpdate, triggerSummarize]
-  );
+    if (userMessageCountRef.current % 4 === 0) triggerSummarize(sessionId);
+    onSessionUpdate?.();
+  }, [sessionId, mode, isStreaming, onPinDetected, onSessionUpdate, triggerSummarize, detectAndSaveMemory, onRateLimit]);
 
-  return {
-    messages,
-    isStreaming,
-    streamingContent,
-    addIntroMessage,
-    loadMessages,
-    clearMessages,
-    sendMessage,
-    stopStreaming,
-    setMessages,
-  };
+  return { messages, isStreaming, streamingContent, addIntroMessage, loadMessages, clearMessages, sendMessage, stopStreaming, setMessages, deleteMessage };
 }
